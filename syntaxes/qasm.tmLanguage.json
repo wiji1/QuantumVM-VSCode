@@ -1,0 +1,95 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "QASM",
+  "scopeName": "source.qasm",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#types"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#functions"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.qasm",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.qasm",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.qasm",
+          "match": "\\b(if|else|for|while|break|continue|return|switch|case|default)\\b"
+        },
+        {
+          "name": "keyword.other.qasm",
+          "match": "\\b(OPENQASM|include|def|gate|measure|reset|barrier|let|const|input|output|extern|pragma)\\b"
+        },
+        {
+          "name": "keyword.operator.qasm",
+          "match": "\\b(inv|pow|ctrl|negctrl|gphase|box|delay|cal|defcal)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.qasm",
+          "match": "\\b(int|uint|float|bool|bit|qubit|angle|complex|duration|stretch|array)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.qasm",
+          "match": "\\b([0-9]+\\.?[0-9]*([eE][+-]?[0-9]+)?|0x[0-9a-fA-F]+|0b[01]+)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.qasm",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.qasm",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.qasm",
+          "match": "\\b(sin|cos|tan|exp|ln|sqrt|arcsin|arccos|arctan|pow|mod|popcount|sizeof)\\b"
+        }
+      ]
+    }
+  }
+}

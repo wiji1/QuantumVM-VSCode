@@ -1,0 +1,62 @@
+name: Publish Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile extension
+        run: npm run compile
+
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
+
+      - name: Package extension
+        run: vsce package
+
+      - name: Azure Login
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: azure/login@v2
+        with:
+          creds: |
+            {
+              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+              "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+            }
+
+      - name: Get Azure DevOps Token
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: get_token
+        run: |
+          TOKEN=$(az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)
+          echo "::add-mask::$TOKEN"
+          echo "AZURE_DEVOPS_TOKEN=$TOKEN" >> $GITHUB_ENV
+
+      - name: Publish to Visual Studio Marketplace
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: vsce publish -p ${{ env.AZURE_DEVOPS_TOKEN }}
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-package
+          path: '*.vsix'

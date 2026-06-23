@@ -1,0 +1,74 @@
+{
+  "name": "qasm-language-support",
+  "displayName": "QASM Language Support",
+  "description": "Language support for OpenQASM 3.0",
+  "version": "0.1.0",
+  "publisher": "quantumvm",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:qasm"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "qasm",
+        "aliases": [
+          "QASM",
+          "OpenQASM",
+          "qasm"
+        ],
+        "extensions": [
+          ".qasm"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "qasm",
+        "scopeName": "source.qasm",
+        "path": "./syntaxes/qasm.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "QASM Language Server",
+      "properties": {
+        "qasmLanguageServer.serverPath": {
+          "type": "string",
+          "default": "qasm-lsp",
+          "description": "Path to the QASM language server executable"
+        },
+        "qasmLanguageServer.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the language server"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "node_modules/.bin/tsc -p ./",
+    "watch": "node_modules/.bin/tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^8.1.0"
+  }
+}
