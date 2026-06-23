@@ -2,6 +2,8 @@ name: Publish Extension
 
 on:
   push:
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -40,6 +42,7 @@ jobs:
               "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
               "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
             }
+          allow-no-subscriptions: true
 
       - name: Get Azure DevOps Token
         if: startsWith(github.ref, 'refs/tags/v')
