@@ -1,9 +1,13 @@
 {
   "name": "qasm-language-support",
-  "displayName": "QASM Language Support",
+  "displayName": "OpenQASM 3.0 Language Support",
   "description": "Language support for OpenQASM 3.0",
   "version": "0.1.0",
   "publisher": "quantumvm",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wiji1/QuantumVM-VSCode.git"
+  },
   "engines": {
     "vscode": "^1.75.0"
   },
