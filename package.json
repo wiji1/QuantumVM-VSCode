@@ -2,7 +2,7 @@
   "name": "qasm-language-support",
   "displayName": "OpenQASM 3.0 Interpreter and Language Support",
   "description": "Language support for OpenQASM 3.0 with automatic LSP download",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "quantumvm",
   "repository": {
     "type": "git",
@@ -70,7 +70,7 @@
   "devDependencies": {
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.75.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "vscode-languageclient": "^8.1.0"
