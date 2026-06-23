@@ -1,6 +1,6 @@
 {
   "name": "qasm-language-support",
-  "displayName": "OpenQASM 3.0 Language Support",
+  "displayName": "OpenQASM 3.0 Interpreter and Language Support",
   "description": "Language support for OpenQASM 3.0",
   "version": "0.1.0",
   "publisher": "quantumvm",
