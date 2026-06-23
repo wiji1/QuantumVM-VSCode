@@ -6,6 +6,7 @@ import { execSync } from 'child_process';
 
 const GITHUB_REPO = 'wiji1/QuantumVM';
 const LSP_BINARY_NAME = 'qasm-lsp';
+const VM_BINARY_NAME = 'QuantumVM';
 
 interface PlatformInfo {
     platform: string;
@@ -112,9 +113,9 @@ function makeExecutable(filePath: string): void {
     }
 }
 
-export async function ensureLspBinary(context: vscode.ExtensionContext): Promise<string> {
+async function ensureBinary(context: vscode.ExtensionContext, binaryName: string, title: string): Promise<string> {
     const platformInfo = getPlatformInfo();
-    const assetName = getAssetName(platformInfo);
+    const assetName = `${binaryName}-${platformInfo.platform}-${platformInfo.arch}${platformInfo.extension}`;
     const binaryPath = path.join(context.globalStorageUri.fsPath, assetName);
 
     if (fs.existsSync(binaryPath)) {
@@ -128,7 +129,7 @@ export async function ensureLspBinary(context: vscode.ExtensionContext): Promise
 
     return vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: 'QASM Language Server',
+        title: title,
         cancellable: false
     }, async (progress) => {
         try {
@@ -140,18 +141,26 @@ export async function ensureLspBinary(context: vscode.ExtensionContext): Promise
                 throw new Error(`No binary found for ${platformInfo.platform}-${platformInfo.arch}`);
             }
 
-            progress.report({message: 'Downloading language server...'});
+            progress.report({message: 'Downloading...'});
             await downloadFile(asset.browser_download_url, binaryPath, progress);
 
             makeExecutable(binaryPath);
 
-            progress.report({message: 'Language server ready!'});
+            progress.report({message: 'Ready!'});
 
             return binaryPath;
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            vscode.window.showErrorMessage(`Failed to download QASM Language Server: ${errorMessage}`);
+            vscode.window.showErrorMessage(`Failed to download ${title}: ${errorMessage}`);
             throw error;
         }
     });
+}
+
+export async function ensureLspBinary(context: vscode.ExtensionContext): Promise<string> {
+    return ensureBinary(context, LSP_BINARY_NAME, 'QASM Language Server');
+}
+
+export async function ensureVmBinary(context: vscode.ExtensionContext): Promise<string> {
+    return ensureBinary(context, VM_BINARY_NAME, 'QuantumVM');
 }

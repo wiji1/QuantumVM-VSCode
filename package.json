@@ -1,8 +1,8 @@
 {
   "name": "qasm-language-support",
   "displayName": "OpenQASM 3.0 Interpreter and Language Support",
-  "description": "Language support for OpenQASM 3.0 with automatic LSP download",
-  "version": "0.2.1",
+  "description": "Language support and interpreter for OpenQASM 3.0 with one-click execution",
+  "version": "0.3.0",
   "publisher": "quantumvm",
   "repository": {
     "type": "git",
@@ -40,6 +40,38 @@
         "path": "./syntaxes/qasm.tmLanguage.json"
       }
     ],
+    "commands": [
+      {
+        "command": "qasm.runFile",
+        "title": "Run QASM File",
+        "category": "QASM",
+        "icon": "$(play)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "qasm.runFile",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r",
+        "when": "editorTextFocus && resourceLangId == qasm"
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "qasm.runFile",
+          "when": "resourceLangId == qasm",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "qasm.runFile",
+          "when": "resourceLangId == qasm",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "type": "object",
       "title": "QASM Language Server",

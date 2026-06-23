@@ -7,10 +7,13 @@ import {
     ServerOptions,
 } from 'vscode-languageclient/node';
 import { ensureLspBinary } from './downloader';
+import { initializeRunner } from './runner';
 
 let client: LanguageClient;
 
 export async function activate(context: ExtensionContext) {
+    initializeRunner(context);
+
     const config = workspace.getConfiguration('qasmLanguageServer');
     let serverPath = config.get<string>('serverPath');
 
