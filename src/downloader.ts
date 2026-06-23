@@ -106,16 +106,16 @@ async function downloadFile(url: string, dest: string, progress?: vscode.Progres
         });
     });
 
+    // On redirect, the recursive call already replaced dest — skip if tmpDest is gone
+    if (!fs.existsSync(tmpDest)) return;
+
     try {
         try { fs.unlinkSync(dest); } catch { }
         fs.renameSync(tmpDest, dest);
     } catch (err) {
         try { fs.unlinkSync(tmpDest); } catch { }
-        throw new Error(`Failed to replace binary at ${dest}. 
-        It may be in use by a running process.${process.platform === 'win32' ?
-            ' Please reload VS Code to complete the update.' : ''} 
-            ${err instanceof Error ? err.message : ''}`
-        );
+        const inUseHint = process.platform === 'win32' ? ' Please reload VS Code to complete the update.' : '';
+        throw new Error(`Failed to replace binary at ${dest}. It may be in use by a running process.${inUseHint} ${err instanceof Error ? err.message : ''}`);
     }
 }
 
