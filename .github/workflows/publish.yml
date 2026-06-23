@@ -32,29 +32,9 @@ jobs:
       - name: Package extension
         run: vsce package
 
-      - name: Azure Login
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: azure/login@v2
-        with:
-          creds: |
-            {
-              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-              "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-            }
-          allow-no-subscriptions: true
-
-      - name: Get Azure DevOps Token
-        if: startsWith(github.ref, 'refs/tags/v')
-        id: get_token
-        run: |
-          TOKEN=$(az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)
-          echo "::add-mask::$TOKEN"
-          echo "AZURE_DEVOPS_TOKEN=$TOKEN" >> $GITHUB_ENV
-
       - name: Publish to Visual Studio Marketplace
         if: startsWith(github.ref, 'refs/tags/v')
-        run: vsce publish -p ${{ env.AZURE_DEVOPS_TOKEN }}
+        run: vsce publish -p ${{ secrets.VSCE_PAT }}
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
