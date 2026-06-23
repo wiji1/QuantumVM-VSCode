@@ -21,10 +21,6 @@ export async function activate(context: ExtensionContext) {
     });
     context.subscriptions.push(updateCommand);
 
-    checkAndUpdate(context).catch(err => {
-        console.error('Update check failed:', err);
-    });
-
     const config = workspace.getConfiguration('qasmLanguageServer');
     let serverPath = config.get<string>('serverPath');
 
@@ -48,6 +44,10 @@ export async function activate(context: ExtensionContext) {
             }
         }
     }
+
+    checkAndUpdate(context).catch(err => {
+        console.error('Update check failed:', err);
+    });
 
     console.log(`Using QASM LSP server: ${serverPath}`);
 

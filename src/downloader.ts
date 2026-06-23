@@ -62,8 +62,12 @@ export async function fetchLatestRelease(): Promise<any> {
 }
 
 async function downloadFile(url: string, dest: string, progress?: vscode.Progress<{ message?: string; increment?: number }>): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const file = fs.createWriteStream(dest);
+    const tmpDest = dest + '.tmp';
+
+    try { fs.unlinkSync(tmpDest); } catch { }
+
+    await new Promise<void>((resolve, reject) => {
+        const file = fs.createWriteStream(tmpDest);
 
         https.get(url, {
             headers: {
@@ -74,7 +78,7 @@ async function downloadFile(url: string, dest: string, progress?: vscode.Progres
                 const redirectUrl = response.headers.location;
                 if (redirectUrl) {
                     file.close();
-                    fs.unlinkSync(dest);
+                    try { fs.unlinkSync(tmpDest); } catch { }
                     return downloadFile(redirectUrl, dest, progress).then(resolve).catch(reject);
                 }
             }
@@ -97,10 +101,22 @@ async function downloadFile(url: string, dest: string, progress?: vscode.Progres
                 resolve();
             });
         }).on('error', (err) => {
-            fs.unlinkSync(dest);
+            try { fs.unlinkSync(tmpDest); } catch { }
             reject(err);
         });
     });
+
+    try {
+        try { fs.unlinkSync(dest); } catch { }
+        fs.renameSync(tmpDest, dest);
+    } catch (err) {
+        try { fs.unlinkSync(tmpDest); } catch { }
+        throw new Error(`Failed to replace binary at ${dest}. 
+        It may be in use by a running process.${process.platform === 'win32' ?
+            ' Please reload VS Code to complete the update.' : ''} 
+            ${err instanceof Error ? err.message : ''}`
+        );
+    }
 }
 
 function makeExecutable(filePath: string): void {
@@ -113,6 +129,8 @@ function makeExecutable(filePath: string): void {
     }
 }
 
+const downloadLocks = new Map<string, Promise<string>>();
+
 async function ensureBinary(context: vscode.ExtensionContext, binaryName: string, title: string, forceDownload: boolean = false): Promise<string> {
     const platformInfo = getPlatformInfo();
     const assetName = `${binaryName}-${platformInfo.platform}-${platformInfo.arch}${platformInfo.extension}`;
@@ -123,10 +141,31 @@ async function ensureBinary(context: vscode.ExtensionContext, binaryName: string
         return binaryPath;
     }
 
+    const lockKey = `${binaryName}-${forceDownload}`;
+    const existing = downloadLocks.get(lockKey);
+    if (existing) return existing;
+
     if (!fs.existsSync(context.globalStorageUri.fsPath)) {
         fs.mkdirSync(context.globalStorageUri.fsPath, { recursive: true });
     }
 
+    const promise = performDownload(context, platformInfo, assetName, binaryPath, title);
+    downloadLocks.set(lockKey, promise);
+
+    try {
+        return await promise;
+    } finally {
+        downloadLocks.delete(lockKey);
+    }
+}
+
+async function performDownload(
+    context: vscode.ExtensionContext,
+    platformInfo: PlatformInfo,
+    assetName: string,
+    binaryPath: string,
+    title: string
+): Promise<string> {
     return vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
         title: title,
