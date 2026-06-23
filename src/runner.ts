@@ -47,8 +47,6 @@ async function runCurrentFile(context: vscode.ExtensionContext) {
 
         outputChannel.clear();
         outputChannel.show(true);
-        outputChannel.appendLine(`Running: ${path.basename(filePath)}`);
-        outputChannel.appendLine('─'.repeat(60));
 
         const { stdout, stderr } = await execFileAsync(vmPath, [filePath], {
             timeout: 30000
@@ -58,30 +56,15 @@ async function runCurrentFile(context: vscode.ExtensionContext) {
             outputChannel.appendLine(stdout);
         }
 
-        if (stderr) {
-            outputChannel.appendLine('Errors:');
-            outputChannel.appendLine(stderr);
-        }
-
-        outputChannel.appendLine('─'.repeat(60));
-        outputChannel.appendLine('Execution completed');
+        if (stderr) outputChannel.appendLine(stderr);
 
     } catch (error: any) {
-        outputChannel.appendLine('─'.repeat(60));
-        outputChannel.appendLine('Execution failed:');
-
         if (error.code === 'ETIMEDOUT') {
             outputChannel.appendLine('Error: Execution timed out (30 seconds)');
-        } else if (error.stdout) {
-            outputChannel.appendLine(error.stdout);
-        }
+        } else if (error.stdout) outputChannel.appendLine(error.stdout);
 
-        if (error.stderr) {
-            outputChannel.appendLine('Errors:');
-            outputChannel.appendLine(error.stderr);
-        } else if (error.message) {
-            outputChannel.appendLine(error.message);
-        }
+        if (error.stderr) outputChannel.appendLine(error.stderr);
+        else if (error.message) outputChannel.appendLine(error.message);
 
         vscode.window.showErrorMessage('Failed to run QASM file. See output for details.');
     }
