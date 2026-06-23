@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
+import * as vscode from 'vscode';
 import { workspace, ExtensionContext, window } from 'vscode';
 import {
     LanguageClient,
@@ -8,11 +9,21 @@ import {
 } from 'vscode-languageclient/node';
 import { ensureLspBinary } from './downloader';
 import { initializeRunner } from './runner';
+import { checkAndUpdate, storeInitialVersion, manualUpdateCheck } from './updater';
 
 let client: LanguageClient;
 
 export async function activate(context: ExtensionContext) {
     initializeRunner(context);
+
+    const updateCommand = vscode.commands.registerCommand('quantumvm.checkForUpdates', async () => {
+        await manualUpdateCheck(context);
+    });
+    context.subscriptions.push(updateCommand);
+
+    checkAndUpdate(context).catch(err => {
+        console.error('Update check failed:', err);
+    });
 
     const config = workspace.getConfiguration('qasmLanguageServer');
     let serverPath = config.get<string>('serverPath');
@@ -30,6 +41,7 @@ export async function activate(context: ExtensionContext) {
         if (!serverPath || !fs.existsSync(serverPath)) {
             try {
                 serverPath = await ensureLspBinary(context);
+                await storeInitialVersion(context);
             } catch (error) {
                 window.showErrorMessage('Failed to download QASM Language Server. Please configure a custom path in settings.');
                 return;

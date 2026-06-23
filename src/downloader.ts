@@ -40,7 +40,7 @@ function getAssetName(platformInfo: PlatformInfo): string {
     return `${LSP_BINARY_NAME}-${platformInfo.platform}-${platformInfo.arch}${platformInfo.extension}`;
 }
 
-async function fetchLatestRelease(): Promise<any> {
+export async function fetchLatestRelease(): Promise<any> {
     return new Promise((resolve, reject) => {
         const options = {
             hostname: 'api.github.com',
@@ -113,12 +113,12 @@ function makeExecutable(filePath: string): void {
     }
 }
 
-async function ensureBinary(context: vscode.ExtensionContext, binaryName: string, title: string): Promise<string> {
+async function ensureBinary(context: vscode.ExtensionContext, binaryName: string, title: string, forceDownload: boolean = false): Promise<string> {
     const platformInfo = getPlatformInfo();
     const assetName = `${binaryName}-${platformInfo.platform}-${platformInfo.arch}${platformInfo.extension}`;
     const binaryPath = path.join(context.globalStorageUri.fsPath, assetName);
 
-    if (fs.existsSync(binaryPath)) {
+    if (fs.existsSync(binaryPath) && !forceDownload) {
         makeExecutable(binaryPath);
         return binaryPath;
     }
@@ -157,10 +157,10 @@ async function ensureBinary(context: vscode.ExtensionContext, binaryName: string
     });
 }
 
-export async function ensureLspBinary(context: vscode.ExtensionContext): Promise<string> {
-    return ensureBinary(context, LSP_BINARY_NAME, 'QASM Language Server');
+export async function ensureLspBinary(context: vscode.ExtensionContext, forceDownload: boolean = false): Promise<string> {
+    return ensureBinary(context, LSP_BINARY_NAME, 'QASM Language Server', forceDownload);
 }
 
-export async function ensureVmBinary(context: vscode.ExtensionContext): Promise<string> {
-    return ensureBinary(context, VM_BINARY_NAME, 'QuantumVM');
+export async function ensureVmBinary(context: vscode.ExtensionContext, forceDownload: boolean = false): Promise<string> {
+    return ensureBinary(context, VM_BINARY_NAME, 'QuantumVM', forceDownload);
 }

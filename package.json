@@ -46,6 +46,11 @@
         "title": "Run QASM File",
         "category": "QASM",
         "icon": "$(play)"
+      },
+      {
+        "command": "quantumvm.checkForUpdates",
+        "title": "Check for Updates",
+        "category": "QuantumVM"
       }
     ],
     "keybindings": [
@@ -90,6 +95,11 @@
           ],
           "default": "off",
           "description": "Traces the communication between VS Code and the language server"
+        },
+        "quantumvm.autoUpdate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically check for and download binary updates from GitHub releases on extension startup"
         }
       }
     }
