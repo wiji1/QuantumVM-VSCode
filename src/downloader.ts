@@ -5,13 +5,13 @@ import * as https from 'https';
 import { execSync } from 'child_process';
 
 const GITHUB_REPO = 'wiji1/QuantumVM';
-const LSP_BINARY_NAME = 'qasm-lsp';
 const VM_BINARY_NAME = 'QuantumVM';
 
 interface PlatformInfo {
-    platform: string;
-    arch: string;
-    extension: string;
+    archName: string;
+    platformName: string;
+    archiveExtension: string;
+    binaryExtension: string;
 }
 
 function getPlatformInfo(): PlatformInfo {
@@ -20,24 +20,30 @@ function getPlatformInfo(): PlatformInfo {
 
     let platformName: string;
     let archName: string;
-    let extension = '';
+    let archiveExtension: string;
+    let binaryExtension = '';
 
     if (platform === 'win32') {
-        platformName = 'windows';
-        extension = '.exe';
-    } else if (platform === 'darwin') platformName = 'macos';
-    else if (platform === 'linux') platformName = 'linux';
-    else throw new Error(`Unsupported platform: ${platform}`);
+        platformName = 'pc-windows-msvc';
+        archiveExtension = '.zip';
+        binaryExtension = '.exe';
+    } else if (platform === 'darwin') {
+        platformName = 'apple-darwin';
+        archiveExtension = '.tar.xz';
+    } else if (platform === 'linux') {
+        platformName = 'unknown-linux-gnu';
+        archiveExtension = '.tar.xz';
+    } else throw new Error(`Unsupported platform: ${platform}`);
 
     if (arch === 'x64') archName = 'x86_64';
     else if (arch === 'arm64') archName = 'aarch64';
     else throw new Error(`Unsupported architecture: ${arch}`);
 
-    return { platform: platformName, arch: archName, extension };
+    return { archName, platformName, archiveExtension, binaryExtension };
 }
 
-function getAssetName(platformInfo: PlatformInfo): string {
-    return `${LSP_BINARY_NAME}-${platformInfo.platform}-${platformInfo.arch}${platformInfo.extension}`;
+function getArchiveName(platformInfo: PlatformInfo): string {
+    return `${VM_BINARY_NAME}-${platformInfo.archName}-${platformInfo.platformName}${platformInfo.archiveExtension}`;
 }
 
 export async function fetchLatestRelease(): Promise<any> {
@@ -106,7 +112,6 @@ async function downloadFile(url: string, dest: string, progress?: vscode.Progres
         });
     });
 
-    // On redirect, the recursive call already replaced dest — skip if tmpDest is gone
     if (!fs.existsSync(tmpDest)) return;
 
     try {
@@ -129,19 +134,52 @@ function makeExecutable(filePath: string): void {
     }
 }
 
+async function extractArchive(archivePath: string, extractDir: string, platformInfo: PlatformInfo): Promise<void> {
+    if (platformInfo.archiveExtension === '.tar.xz') {
+        execSync(`tar xJf "${archivePath}" -C "${extractDir}"`, { stdio: 'pipe' });
+    } else if (platformInfo.archiveExtension === '.zip') {
+        execSync(`powershell -NoProfile -Command "Expand-Archive -Path '${archivePath}' -DestinationPath '${extractDir}' -Force"`, { stdio: 'pipe' });
+    }
+}
+
+function copyBinariesFromArchive(extractDir: string, storageDir: string, platformInfo: PlatformInfo): void {
+    const binaries = ['qasm-lsp', VM_BINARY_NAME];
+    const archiveDirName = `${VM_BINARY_NAME}-${platformInfo.archName}-${platformInfo.platformName}`;
+
+    for (const binaryName of binaries) {
+        let srcPath: string | null = null;
+
+        const subDir = path.join(extractDir, archiveDirName);
+        if (fs.existsSync(subDir)) {
+            const p = path.join(subDir, binaryName + platformInfo.binaryExtension);
+            if (fs.existsSync(p)) srcPath = p;
+        }
+
+        if (!srcPath) {
+            const p = path.join(extractDir, binaryName + platformInfo.binaryExtension);
+            if (fs.existsSync(p)) srcPath = p;
+        }
+
+        if (srcPath) {
+            const destPath = path.join(storageDir, binaryName + platformInfo.binaryExtension);
+            try { fs.unlinkSync(destPath); } catch { }
+            fs.copyFileSync(srcPath, destPath);
+        }
+    }
+}
+
 const downloadLocks = new Map<string, Promise<string>>();
 
 async function ensureBinary(context: vscode.ExtensionContext, binaryName: string, title: string, forceDownload: boolean = false): Promise<string> {
     const platformInfo = getPlatformInfo();
-    const assetName = `${binaryName}-${platformInfo.platform}-${platformInfo.arch}${platformInfo.extension}`;
-    const binaryPath = path.join(context.globalStorageUri.fsPath, assetName);
+    const binaryPath = path.join(context.globalStorageUri.fsPath, binaryName + platformInfo.binaryExtension);
 
     if (fs.existsSync(binaryPath) && !forceDownload) {
         makeExecutable(binaryPath);
         return binaryPath;
     }
 
-    const lockKey = `${binaryName}-${forceDownload}`;
+    const lockKey = binaryName;
     const existing = downloadLocks.get(lockKey);
     if (existing) return existing;
 
@@ -149,7 +187,7 @@ async function ensureBinary(context: vscode.ExtensionContext, binaryName: string
         fs.mkdirSync(context.globalStorageUri.fsPath, { recursive: true });
     }
 
-    const promise = performDownload(context, platformInfo, assetName, binaryPath, title);
+    const promise = performDownload(context, platformInfo, binaryName, binaryPath, title);
     downloadLocks.set(lockKey, promise);
 
     try {
@@ -162,7 +200,7 @@ async function ensureBinary(context: vscode.ExtensionContext, binaryName: string
 async function performDownload(
     context: vscode.ExtensionContext,
     platformInfo: PlatformInfo,
-    assetName: string,
+    binaryName: string,
     binaryPath: string,
     title: string
 ): Promise<string> {
@@ -172,20 +210,43 @@ async function performDownload(
         cancellable: false
     }, async (progress) => {
         try {
-            progress.report({message: 'Fetching latest release...'});
+            progress.report({ message: 'Fetching latest release...' });
             const release = await fetchLatestRelease();
 
-            const asset = release.assets.find((a: any) => a.name === assetName);
+            const archiveName = getArchiveName(platformInfo);
+            const asset = release.assets.find((a: any) => a.name === archiveName);
             if (!asset) {
-                throw new Error(`No binary found for ${platformInfo.platform}-${platformInfo.arch}`);
+                throw new Error(`No archive found for ${platformInfo.archName}-${platformInfo.platformName}`);
             }
 
-            progress.report({message: 'Downloading...'});
-            await downloadFile(asset.browser_download_url, binaryPath, progress);
+            const tmpDir = path.join(context.globalStorageUri.fsPath, '.tmp');
+            if (!fs.existsSync(tmpDir)) {
+                fs.mkdirSync(tmpDir, { recursive: true });
+            }
+
+            const archivePath = path.join(tmpDir, archiveName);
+            const extractDir = path.join(tmpDir, 'extracted');
+
+            try { fs.rmSync(extractDir, { recursive: true }); } catch { }
+            fs.mkdirSync(extractDir, { recursive: true });
+
+            progress.report({ message: 'Downloading...' });
+            await downloadFile(asset.browser_download_url, archivePath, progress);
+
+            progress.report({ message: 'Extracting...' });
+            await extractArchive(archivePath, extractDir, platformInfo);
+
+            copyBinariesFromArchive(extractDir, context.globalStorageUri.fsPath, platformInfo);
+
+            try { fs.rmSync(tmpDir, { recursive: true }); } catch { }
+
+            if (!fs.existsSync(binaryPath)) {
+                throw new Error(`Binary ${binaryName} not found in archive`);
+            }
 
             makeExecutable(binaryPath);
 
-            progress.report({message: 'Ready!'});
+            progress.report({ message: 'Ready!' });
 
             return binaryPath;
         } catch (error) {
@@ -197,7 +258,7 @@ async function performDownload(
 }
 
 export async function ensureLspBinary(context: vscode.ExtensionContext, forceDownload: boolean = false): Promise<string> {
-    return ensureBinary(context, LSP_BINARY_NAME, 'QASM Language Server', forceDownload);
+    return ensureBinary(context, 'qasm-lsp', 'QASM Language Server', forceDownload);
 }
 
 export async function ensureVmBinary(context: vscode.ExtensionContext, forceDownload: boolean = false): Promise<string> {
