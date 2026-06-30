@@ -4,7 +4,7 @@
   "description": "Language support and interpreter for OpenQASM 3.0 with one-click execution",
   "version": "1.2.4",
   "publisher": "quantumvm",
-  "icon": "icon.svg",
+  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/wiji1/QuantumVM-VSCode.git"
