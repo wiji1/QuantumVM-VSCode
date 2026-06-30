@@ -1,4 +1,4 @@
-# QuantumVM — OpenQASM Plugin for VS Code
+# QuantumVM — OpenQASM Extension for VS Code
 
 OpenQASM 3.0 support for VS Code with LSP integration and runtime execution.
 ## Features
