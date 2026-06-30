@@ -2,7 +2,7 @@
   "name": "qasm-language-support",
   "displayName": "OpenQASM 3.0 Interpreter and Language Support",
   "description": "Language support and interpreter for OpenQASM 3.0 with one-click execution",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "publisher": "quantumvm",
   "icon": "icon.png",
   "repository": {

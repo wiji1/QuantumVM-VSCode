@@ -142,7 +142,36 @@ async function extractArchive(archivePath: string, extractDir: string, platformI
     }
 }
 
-function copyBinariesFromArchive(extractDir: string, storageDir: string, platformInfo: PlatformInfo): void {
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function copyFileWithRetry(src: string, dest: string, maxRetries: number = 5): Promise<void> {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            if (process.platform === 'win32' && fs.existsSync(dest)) {
+                const oldPath = dest + '.old';
+                try { fs.unlinkSync(oldPath); } catch { }
+                try {
+                    fs.renameSync(dest, oldPath);
+                } catch {
+                }
+            } else try { fs.unlinkSync(dest); } catch { }
+            fs.copyFileSync(src, dest);
+            return;
+        } catch (err: any) {
+            if (attempt < maxRetries - 1 && err?.code === 'EBUSY') {
+                const wait = 500 * Math.pow(2, attempt);
+                await sleep(wait);
+                continue;
+            }
+            const inUseHint = process.platform === 'win32' ? ' Please reload VS Code to complete the update.' : '';
+            throw new Error(`Failed to replace binary at ${dest}. It may be in use by a running process.${inUseHint} ${err instanceof Error ? err.message : ''}`);
+        }
+    }
+}
+
+async function copyBinariesFromArchive(extractDir: string, storageDir: string, platformInfo: PlatformInfo): Promise<void> {
     const binaries = ['qasm-lsp', VM_BINARY_NAME];
     const archiveDirName = `${VM_BINARY_NAME}-${platformInfo.archName}-${platformInfo.platformName}`;
 
@@ -162,8 +191,7 @@ function copyBinariesFromArchive(extractDir: string, storageDir: string, platfor
 
         if (srcPath) {
             const destPath = path.join(storageDir, binaryName + platformInfo.binaryExtension);
-            try { fs.unlinkSync(destPath); } catch { }
-            fs.copyFileSync(srcPath, destPath);
+            await copyFileWithRetry(srcPath, destPath);
         }
     }
 }
@@ -236,7 +264,7 @@ async function performDownload(
             progress.report({ message: 'Extracting...' });
             await extractArchive(archivePath, extractDir, platformInfo);
 
-            copyBinariesFromArchive(extractDir, context.globalStorageUri.fsPath, platformInfo);
+            await copyBinariesFromArchive(extractDir, context.globalStorageUri.fsPath, platformInfo);
 
             try { fs.rmSync(tmpDir, { recursive: true }); } catch { }
 
