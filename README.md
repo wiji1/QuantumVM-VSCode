@@ -1,7 +1,6 @@
-# OpenQASM 3.0 Interpreter and Language Support
+# QuantumVM — OpenQASM Plugin for VS Code
 
-Language support and interpreter for OpenQASM 3.0 with one-click execution.
-
+OpenQASM 3.0 support for VS Code with LSP integration and runtime execution.
 ## Features
 
 - **Syntax Highlighting** — Full grammar for OpenQASM 3.0 files (`.qasm`)
@@ -13,6 +12,10 @@ Language support and interpreter for OpenQASM 3.0 with one-click execution.
 
 - **VS Code** ^1.75.0
 - The QASM language server binary (`qasm-lsp`) — the extension will download it automatically on first use, or you can point to a custom path via the `qasmLanguageServer.serverPath` setting.
+
+## Installation
+
+Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=quantumvm.qasm-language-support), or download and install the `.vsix` from the [GitHub Releases](https://github.com/wiji1/QuantumVM-VSCode/releases) page.
 
 ## Usage
 
@@ -27,10 +30,29 @@ Language support and interpreter for OpenQASM 3.0 with one-click execution.
 | `qasmLanguageServer.trace.server` | `off` | Traces VS Code ↔ language server communication |
 | `quantumvm.autoUpdate` | `true` | Automatically download binary updates on startup |
 
-## Release Notes
+## Development
 
-See [CHANGELOG](https://github.com/wiji1/QuantumVM-VSCode/releases) for version history.
+1. Clone the repo and install dependencies:
+   ```
+   git clone https://github.com/wiji1/QuantumVM-VSCode.git
+   cd QuantumVM-VSCode
+   npm install
+   ```
+2. Compile the TypeScript:
+   ```
+   npm run compile
+   ```
+3. Press `F5` in VS Code to launch a new Extension Development Host window.
+4. To package a `.vsix` for distribution, install `@vscode/vsce` and run:
+   ```
+   npx @vscode/vsce package
+   ```
 
-## Repository
+## Contributing
 
-[github.com/wiji1/QuantumVM-VSCode](https://github.com/wiji1/QuantumVM-VSCode)
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Links
+
+- [QuantumVM Repository](https://github.com/wiji1/QuantumVM)
+- [Visual Studio Marketplace Extension Page](https://marketplace.visualstudio.com/items?itemName=quantumvm.qasm-language-support)
